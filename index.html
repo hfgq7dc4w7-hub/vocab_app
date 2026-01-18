@@ -1,75 +1,392 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>英単語学習</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vocab App</title>
+
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background: #f6f6f6;
+    :root{
+      --bg:#f6f6f6; --card:#fff; --text:#111; --muted:#666;
+      --line:#e7e7e7; --primary:#1a73e8; --danger:#d93025;
+      --ok:#1e8e3e; --ng:#d93025;
     }
-    .card {
-      background: #fff;
-      padding: 16px;
-      border-radius: 12px;
-      margin-bottom: 12px;
+    *{box-sizing:border-box}
+    body{
+      margin:0;background:var(--bg);color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial;
     }
-    button {
-      width: 100%;
-      padding: 12px;
-      margin-top: 8px;
-      font-size: 16px;
+    .hidden{display:none!important}
+
+    /* Top bar */
+    .topbar{
+      position:sticky;top:0;z-index:10;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;background:#fff;border-bottom:1px solid var(--line);
     }
-    .word {
-      font-size: 28px;
-      font-weight: bold;
-      margin-bottom: 8px;
+    .topbar__title{font-weight:800}
+    .topbar__right{display:flex;gap:8px}
+
+    /* Layout */
+    .container{max-width:760px;margin:0 auto;padding:14px}
+    .card{
+      background:var(--card);border:1px solid var(--line);
+      border-radius:14px;padding:14px;margin-bottom:12px
     }
-    input {
-      width: 100%;
-      font-size: 18px;
-      padding: 8px;
-      margin-top: 8px;
+    .divider{height:1px;background:var(--line);margin:14px 0}
+
+    /* Buttons, inputs */
+    button{
+      border:1px solid var(--line);background:#fff;border-radius:12px;
+      padding:12px;font-size:16px
     }
-    .hidden {
-      display: none;
+    button.primary{
+      background:var(--primary);border-color:var(--primary);
+      color:#fff;font-weight:800
     }
-    #detail {
-      margin-top: 12px;
-      padding: 12px;
-      background: #eef3ff;
-      border-radius: 8px;
-      font-size: 15px;
+    button.ghost{background:transparent}
+    button.danger{
+      background:var(--danger);border-color:var(--danger);color:#fff;font-weight:800
+    }
+    button:disabled{opacity:.5}
+
+    .input{
+      width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);
+      font-size:18px
+    }
+    select{
+      width:220px;max-width:55vw;padding:10px;border-radius:10px;
+      border:1px solid var(--line);background:#fff
+    }
+
+    .hint{color:var(--muted);font-size:13px;line-height:1.4}
+    .row{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;margin:10px 0
+    }
+
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    @media (max-width:560px){.grid2,.grid3{grid-template-columns:1fr}}
+
+    /* Pills / header rows */
+    .bar{
+      display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap
+    }
+    .pill{
+      border:1px solid var(--line);border-radius:999px;padding:6px 10px;
+      font-size:13px;background:#fff
+    }
+    .spacer{flex:1}
+
+    /* Q box */
+    .qbox{padding:4px 2px}
+    .qtitle{font-size:28px;font-weight:900;margin:6px 0}
+    .qsub{color:var(--muted);min-height:18px;margin-bottom:8px}
+
+    .result{margin-top:10px;font-weight:900;font-size:16px}
+    .result.ok{color:var(--ok)}
+    .result.ng{color:var(--ng)}
+
+    .detail{
+      margin-top:10px;padding:12px;background:#eef3ff;border-radius:12px;
+      border:1px solid #d8e5ff;font-size:14px;line-height:1.65
+    }
+
+    /* Test navigation */
+    .testNav{
+      display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0
+    }
+    .miniBtn{
+      padding:8px 10px;border-radius:10px;font-size:14px
+    }
+
+    /* Jump grid (跨いで戻る) */
+    .jumpBox{
+      margin:10px 0;padding:10px;border:1px solid var(--line);
+      border-radius:12px;background:#fff
+    }
+    .jumpTitle{font-weight:800;margin-bottom:8px}
+    .jumpGrid{
+      display:grid;
+      grid-template-columns:repeat(10, 1fr);
+      gap:6px;
+    }
+    @media (max-width:560px){
+      .jumpGrid{grid-template-columns:repeat(5, 1fr)}
+    }
+    .jumpBtn{
+      padding:10px 0;border-radius:10px;font-size:14px;
+      border:1px solid var(--line);background:#fff
+    }
+    .jumpBtn.active{border-color:var(--primary);outline:2px solid rgba(26,115,232,.15)}
+    .jumpBtn.done{background:#f3f8ff}
+
+    /* Scores */
+    .scoreBig{font-size:34px;font-weight:950;margin:8px 0}
+    .miniCard{
+      border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center;background:#fff
+    }
+
+    pre.mono{
+      white-space:pre-wrap;background:#0b1020;color:#e6edf3;border-radius:12px;
+      padding:12px;font-size:12px
     }
   </style>
 </head>
+
 <body>
+  <header class="topbar">
+    <div class="topbar__title" id="topTitle">Vocab App</div>
+    <div class="topbar__right">
+      <button class="ghost" id="btnHome">ホーム</button>
+    </div>
+  </header>
 
-<!-- モード選択 -->
-<div class="card" id="modeSelect">
-  <h2>モード選択</h2>
-  <button onclick="startMode('A')">A：英 → 日</button>
-  <button onclick="startMode('B')">B：日 → 英</button>
-  <button onclick="startMode('C')">C：核 → 英</button>
-</div>
+  <main class="container">
 
-<!-- 問題画面 -->
-<div class="card hidden" id="quiz">
-  <div class="word" id="question"></div>
+    <!-- ===================== HOME ===================== -->
+    <section class="card" id="screenHome">
+      <h2>ホーム</h2>
 
-  <input id="answer" placeholder="答えを入力してEnter">
+      <div class="grid2">
+        <button class="primary" id="btnGoLearn">学習を開始</button>
+        <button class="primary" id="btnGoTest">大問テスト</button>
+        <button id="btnGoStats">学習記録</button>
+        <button id="btnGoSettings">設定</button>
+      </div>
 
-  <button onclick="submitAnswer()">決定</button>
+      <div class="divider"></div>
 
-  <div id="result"></div>
-  <div id="detail" class="hidden"></div>
+      <h3>学習モード</h3>
+      <div class="grid3">
+        <button id="btnModeA">A：英 → 日</button>
+        <button id="btnModeB">B：日 → 英</button>
+        <button id="btnModeC">C：核 → 英</button>
+      </div>
 
-  <button onclick="backToMenu()">モード選択に戻る</button>
-</div>
+      <p class="hint">
+        仕様：Aは複数回答OK（1つでも当たれば1点） / Bは headword 完全一致 / Cは synonyms_core まで許可。<br>
+        iPhoneは Safari の「共有 → ホーム画面に追加」でアプリ風にできます。
+      </p>
+    </section>
 
-<script src="app.js"></script>
+    <!-- ===================== LEARN SETUP ===================== -->
+    <section class="card hidden" id="screenLearnSetup">
+      <h2>学習：設定</h2>
+
+      <label class="row">
+        <span>モード</span>
+        <select id="learnMode">
+          <option value="A">A：英 → 日</option>
+          <option value="B">B：日 → 英</option>
+          <option value="C">C：核 → 英</option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span>範囲（200語ごと）</span>
+        <select id="learnRange">
+          <option value="1">1–200</option>
+          <option value="2">201–400</option>
+          <option value="3">401–600</option>
+          <option value="all">全体</option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span>1問の制限時間</span>
+        <select id="learnPerQTime">
+          <option value="0">無制限</option>
+          <option value="10">10秒</option>
+          <option value="20">20秒</option>
+          <option value="30">30秒</option>
+        </select>
+      </label>
+
+      <div class="grid2">
+        <button class="primary" id="btnStartLearn">開始</button>
+        <button id="btnBackFromLearnSetup">戻る</button>
+      </div>
+
+      <p class="hint">
+        ※ data_words.json は各 sense に core を必須とします。意味は最大10個表示。<br>
+        ※ 2500語化は data_words.json を増やすだけでOK。
+      </p>
+    </section>
+
+    <!-- ===================== LEARN ===================== -->
+    <section class="card hidden" id="screenLearn">
+      <div class="bar">
+        <div class="pill" id="learnPill">モード A</div>
+        <div class="pill" id="learnRangePill">1–200</div>
+        <div class="pill" id="learnTimerPill">⏱ 無制限</div>
+        <div class="spacer"></div>
+        <button class="ghost" id="btnPauseLearn">一時停止</button>
+      </div>
+
+      <div class="qbox">
+        <div class="qtitle" id="learnQuestionTitle">run</div>
+        <div class="qsub" id="learnQuestionSub"></div>
+
+        <input id="learnAnswer" class="input" placeholder="答えを入力してEnter（複数は「、」「,」「空白」で区切りOK）" autocomplete="off" />
+
+        <div class="grid2">
+          <button class="primary" id="btnSubmitLearn">決定</button>
+          <button id="btnNextLearn">次へ</button>
+        </div>
+
+        <div class="result" id="learnResult"></div>
+        <div class="detail hidden" id="learnDetail"></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <button id="btnEndLearn">終了</button>
+        <button id="btnBackToMenuLearn">メニューへ</button>
+      </div>
+    </section>
+
+    <!-- ===================== TEST SETUP ===================== -->
+    <section class="card hidden" id="screenTestSetup">
+      <h2>大問テスト：設定</h2>
+
+      <label class="row">
+        <span>範囲（200語ごと）</span>
+        <select id="testRange">
+          <option value="1">1–200</option>
+          <option value="2">201–400</option>
+          <option value="3">401–600</option>
+          <option value="all">全体</option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span>全体の制限時間</span>
+        <select id="testTotalTime">
+          <option value="0">無制限</option>
+          <option value="300">5分</option>
+          <option value="600">10分</option>
+          <option value="900">15分</option>
+        </select>
+      </label>
+
+      <div class="grid2">
+        <button class="primary" id="btnStartTest">テスト開始</button>
+        <button id="btnBackFromTestSetup">戻る</button>
+      </div>
+
+      <p class="hint">
+        構成：大問1(A)10問×3点 / 大問2(B)10問×3点 / 大問3(C)10問×4点 = 100点<br>
+        テスト中は正誤を表示しません。終了後にまとめて表示。
+      </p>
+    </section>
+
+    <!-- ===================== TEST ===================== -->
+    <section class="card hidden" id="screenTest">
+      <div class="bar">
+        <div class="pill" id="testPill">テスト</div>
+        <div class="pill" id="testSectionPill">大問1</div>
+        <div class="pill" id="testTimerPill">⏱ 無制限</div>
+        <div class="spacer"></div>
+        <button class="ghost" id="btnPauseTest">一時停止</button>
+      </div>
+
+      <!-- 大問を跨いで戻る：ジャンプボタン -->
+      <div class="jumpBox">
+        <div class="jumpTitle">問題へ移動（大問を跨いでOK）</div>
+        <div class="hint" style="margin-bottom:8px">
+          A(1-10) / B(11-20) / C(21-30) の番号で移動できます
+        </div>
+        <div class="jumpGrid" id="testJumpGrid">
+          <!-- app.js が 1〜30 のボタンを生成 -->
+        </div>
+      </div>
+
+      <div class="qbox">
+        <div class="qtitle" id="testQuestionTitle"></div>
+        <div class="qsub" id="testQuestionSub"></div>
+
+        <div class="testNav">
+          <button class="ghost miniBtn" id="btnPrevTest">← 前</button>
+          <div id="testIndexText">1 / 10</div>
+          <button class="ghost miniBtn" id="btnNextTestNav">次 →</button>
+        </div>
+
+        <input id="testAnswer" class="input" placeholder="答えを入力してEnter（未入力は×）" autocomplete="off" />
+
+        <div class="grid2">
+          <button class="primary" id="btnSaveAnswer">この問題を保存</button>
+          <button id="btnFinishSection">この大問を確定</button>
+        </div>
+
+        <div class="hint">
+          ※ テスト中は正誤も詳細も出しません（終了後にまとめて表示）
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <button class="danger" id="btnQuitTest">中断</button>
+        <button id="btnJumpSummary">最終結果へ</button>
+      </div>
+    </section>
+
+    <!-- ===================== TEST RESULT ===================== -->
+    <section class="card hidden" id="screenTestResult">
+      <h2>テスト結果</h2>
+      <div class="scoreBig" id="scoreBig">0 / 100</div>
+
+      <div class="grid3">
+        <div class="miniCard" id="scoreA">A：0/30</div>
+        <div class="miniCard" id="scoreB">B：0/30</div>
+        <div class="miniCard" id="scoreC">C：0/40</div>
+      </div>
+
+      <div class="divider"></div>
+      <h3>解答一覧（○×＋詳細）</h3>
+      <div id="resultList"></div>
+
+      <div class="divider"></div>
+      <div class="grid2">
+        <button class="primary" id="btnBackHomeFromResult">ホームへ</button>
+        <button id="btnRetryTest">もう一回</button>
+      </div>
+    </section>
+
+    <!-- ===================== STATS ===================== -->
+    <section class="card hidden" id="screenStats">
+      <h2>学習記録</h2>
+      <div class="hint">※ localStorage に保存（端末内）。</div>
+      <div id="statsBox"></div>
+
+      <div class="divider"></div>
+      <div class="grid2">
+        <button id="btnClearStats">記録をリセット</button>
+        <button id="btnBackFromStats">戻る</button>
+      </div>
+    </section>
+
+    <!-- ===================== SETTINGS ===================== -->
+    <section class="card hidden" id="screenSettings">
+      <h2>設定</h2>
+      <p class="hint">
+        後で追加：SRS / 固定間隔 / バックアップ / iCloud など。今は土台のみ。
+      </p>
+
+      <div class="grid2">
+        <button id="btnBackFromSettings">戻る</button>
+        <button class="ghost" id="btnExportData">学習データを書き出し</button>
+      </div>
+
+      <pre class="mono hidden" id="exportBox"></pre>
+    </section>
+
+  </main>
+
+  <!-- app.js を同じフォルダに置く -->
+  <script src="app.js"></script>
 </body>
 </html>
