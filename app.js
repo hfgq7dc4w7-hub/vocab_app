@@ -1,3 +1,5 @@
+alert("app.js loaded!");
+console.log("app.js loaded!");
 let words = [];
 let currentWord = null;
 let currentSense = null;
